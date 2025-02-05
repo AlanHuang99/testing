@@ -1,10 +1,27 @@
 const express = require('express');
-const app = express();
+const sqlite3 = require('sqlite3').verbose(); // Using SQLite for demonstration
 
-// Reflected XSS vulnerability
-app.get('/xss', (req, res) => {
-    const userInput = req.query.input;
-    res.send(`<h1>Your input: ${userInput}</h1>`); // Unsanitized user input
+const app = express();
+const db = new sqlite3.Database(':memory:'); // In-memory database for testing
+
+// Create a dummy users table
+db.serialize(() => {
+    db.run("CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)");
+    db.run("INSERT INTO users (name) VALUES ('Alice'), ('Bob'), ('Charlie')");
+});
+
+// Vulnerable SQL Injection endpoint
+app.get('/user', (req, res) => {
+    const username = req.query.name;
+    const query = `SELECT * FROM users WHERE name = '${username}'`; // Vulnerable query
+
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            res.status(500).send('Database error');
+            return;
+        }
+        res.json(rows);
+    });
 });
 
 app.get('/', (req, res) => {
