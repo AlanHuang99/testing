@@ -13,9 +13,9 @@ db.serialize(() => {
 // Vulnerable SQL Injection endpoint
 app.get('/user', (req, res) => {
     const username = req.query.name;
-    const query = `SELECT * FROM users WHERE name = '${username}'`; // Vulnerable query
+    const query = `SELECT * FROM users WHERE name = ?`; // Parameterized query
 
-    db.all(query, [], (err, rows) => {
+    db.all(query, [username], (err, rows) => {
         if (err) {
             res.status(500).send('Database error');
             return;
